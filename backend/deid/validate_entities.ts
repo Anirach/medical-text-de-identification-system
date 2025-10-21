@@ -113,5 +113,7 @@ ${customKeywords || "None"}
 - Do NOT modify the original text
 - Include ALL entities with confidence >= 0.5
 - Partial Thai names are important - look for abbreviated patient names
+- DO NOT tag medication/drug names (e.g., paracetamol, aspirin, antibiotics) as PERSON
+- DO NOT tag medical procedures or tests (e.g., MRI, CT, Lab) as PERSON
 - Return ONLY the JSON array, no other text`;
 }
