@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Copy, Download, Sparkles } from "lucide-react";
-import backend from "~backend/client";
+import { useBackend } from "../hooks/useBackend";
 import type { AnonymizationMethod, EntityType } from "~backend/deid/types";
 import ConfigPanel from "../components/ConfigPanel";
 import EntityDisplay from "../components/EntityDisplay";
@@ -32,6 +32,7 @@ export default function DeIdentify() {
   const [customMaskList, setCustomMaskList] = useState<any[]>([]);
   const [useLLM, setUseLLM] = useState(false);
   const { toast } = useToast();
+  const backend = useBackend();
 
   const handleProcess = async () => {
     if (!inputText.trim()) {
