@@ -1,4 +1,5 @@
 import { Entity, EntityType, MaskKeyword } from "./types";
+import { filterFalsePositives, mergeOverlappingEntities, enhanceEntitiesWithContext } from "./entity_filters";
 
 export function detectEntitiesWithRegex(
   text: string,
@@ -9,31 +10,32 @@ export function detectEntitiesWithRegex(
 
   // Person names (English)
   if (enabledTypes.includes("PERSON")) {
-    const englishNamePattern = /\b[A-Z][a-z]+ [A-Z][a-z]+\b/g;
+    const titlePattern = /(Mr\.|Mrs\.|Ms\.|Miss|Dr\.|Doctor|Prof\.|Professor|นาย|นาง|นางสาว|นพ\.|พญ\.|ผศ\.)\s+([A-ZÀ-ÿก-๙][a-zà-ÿก-๙]+(?:\s+[A-ZÀ-ÿก-๙][a-zà-ÿก-๙]+)*)/g;
     let match;
+    while ((match = titlePattern.exec(text)) !== null) {
+      entities.push({
+        type: "PERSON",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const englishNamePattern = /\b(?!(?:January|February|March|April|May|June|July|August|September|October|November|December|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Hospital|Clinic|Center|Medical|Health|Insurance|University|Company|Corporation|Department|Street|Avenue|Road|Boulevard|City|State|Province|District|County|Bangkok|Pattaya|California|Angeles|York)\b)[A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g;
     while ((match = englishNamePattern.exec(text)) !== null) {
-      entities.push({
-        type: "PERSON",
-        text: match[0],
-        start: match.index,
-        end: match.index + match[0].length,
-      });
+      const name = match[0];
+      if (!isCommonOrganizationOrLocation(name)) {
+        entities.push({
+          type: "PERSON",
+          text: name,
+          start: match.index,
+          end: match.index + name.length,
+        });
+      }
     }
 
-    // Person names (Thai)
-    const thaiNamePattern = /(?:ผู้ป่วย|หมอ|Dr\.\s+)?([ก-๙]+)\s+([ก-๙]+)(?:\s+([ก-๙]+))?/g;
+    const thaiNamePattern = /(?:คุณ|นาย|นาง|นางสาว|ผู้ป่วย)\s+([ก-๙]+\s+[ก-๙]+)/g;
     while ((match = thaiNamePattern.exec(text)) !== null) {
-      entities.push({
-        type: "PERSON",
-        text: match[0],
-        start: match.index,
-        end: match.index + match[0].length,
-      });
-    }
-
-    // Doctor names with titles
-    const doctorPattern = /(Dr\.|Doctor|หมอ)\s+([A-Z][a-z]+)(?:\s+([A-Z][a-z]+))?/g;
-    while ((match = doctorPattern.exec(text)) !== null) {
       entities.push({
         type: "PERSON",
         text: match[0],
@@ -43,7 +45,6 @@ export function detectEntitiesWithRegex(
     }
   }
 
-  // Dates (Numeric)
   if (enabledTypes.includes("DATE")) {
     const numericDatePattern = /\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g;
     let match;
@@ -56,7 +57,26 @@ export function detectEntitiesWithRegex(
       });
     }
 
-    // Dates (Thai)
+    const monthNameDatePattern = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g;
+    while ((match = monthNameDatePattern.exec(text)) !== null) {
+      entities.push({
+        type: "DATE",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const birthDatePattern = /\b(?:born\s+on\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi;
+    while ((match = birthDatePattern.exec(text)) !== null) {
+      entities.push({
+        type: "DATE",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
     const thaiDatePattern = /(?:วันที่\s+)?\d{1,2}\s+(?:มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s+\d{4}/g;
     while ((match = thaiDatePattern.exec(text)) !== null) {
       entities.push({
@@ -66,11 +86,20 @@ export function detectEntitiesWithRegex(
         end: match.index + match[0].length,
       });
     }
+
+    const yearOnlyPattern = /\b(?:in|since|from|year)\s+(19|20)\d{2}\b/gi;
+    while ((match = yearOnlyPattern.exec(text)) !== null) {
+      entities.push({
+        type: "DATE",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
   }
 
-  // Phone numbers
   if (enabledTypes.includes("CONTACT")) {
-    const phonePattern = /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g;
+    const phonePattern = /\b\d{3}[-.‑\s]?\d{3}[-.‑\s]?\d{4}\b/g;
     let match;
     while ((match = phonePattern.exec(text)) !== null) {
       entities.push({
@@ -81,7 +110,16 @@ export function detectEntitiesWithRegex(
       });
     }
 
-    // Email addresses
+    const thaiPhonePattern = /\b0[-.‑\s]?\d{4}[-.‑\s]?\d{4}\b/g;
+    while ((match = thaiPhonePattern.exec(text)) !== null) {
+      entities.push({
+        type: "CONTACT",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
     const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
     while ((match = emailPattern.exec(text)) !== null) {
       entities.push({
@@ -93,9 +131,8 @@ export function detectEntitiesWithRegex(
     }
   }
 
-  // Medical IDs
   if (enabledTypes.includes("ID")) {
-    const idPattern = /\b(?:เลข|เลขที่|MRN[:：]?\s*|HN[:：]?\s*|ID[:：]?\s*)([A-Z]{2}\d{6,}|\d{5,})\b/g;
+    const idPattern = /\b(?:เลข|เลขที่|MRN[:：]?\s*|HN[:：]?\s*|ID[:：]?\s*|National\s+ID[:：]?\s*)([A-Z]{2}\d{6,}|\d{5,})\b/gi;
     let match;
     while ((match = idPattern.exec(text)) !== null) {
       entities.push({
@@ -105,13 +142,64 @@ export function detectEntitiesWithRegex(
         end: match.index + match[0].length,
       });
     }
+
+    const nationalIdPattern = /\b\d{13}(?:[-.‑]\d{2})?\b/g;
+    while ((match = nationalIdPattern.exec(text)) !== null) {
+      entities.push({
+        type: "ID",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const passportPattern = /\b(?:passport|หนังสือเดินทาง)[\s:]*([A-Z]\d{7,8})\b/gi;
+    while ((match = passportPattern.exec(text)) !== null) {
+      entities.push({
+        type: "ID",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const policyPattern = /\b(?:policy\s+no\.?|insurance\s+no\.?|policy)[\s:]*([A-Z]{2}[-.‑]?\d{8})\b/gi;
+    while ((match = policyPattern.exec(text)) !== null) {
+      entities.push({
+        type: "ID",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
   }
 
-  // Locations
   if (enabledTypes.includes("LOCATION")) {
-    const locationPattern = /\b(?:ER|ICU|แผนก[ก-๙]+)\b/g;
+    const departmentPattern = /\b(?:ER|ICU|แผนก[ก-๙]+|Room\s+\d+|Records\s+Department)\b/gi;
     let match;
-    while ((match = locationPattern.exec(text)) !== null) {
+    while ((match = departmentPattern.exec(text)) !== null) {
+      entities.push({
+        type: "LOCATION",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const addressPattern = /\b(?:ชั้น|อาคาร|ถนน|ซอย|แขวง|เขต)\s+[ก-๙A-Za-z0-9\s]+(?:(?:ชั้น|อาคาร|ถนน|ซอย|แขวง|เขต)\s+[ก-๙A-Za-z0-9\s]+)*/g;
+    while ((match = addressPattern.exec(text)) !== null) {
+      if (match[0].length < 200) {
+        entities.push({
+          type: "LOCATION",
+          text: match[0].trim(),
+          start: match.index,
+          end: match.index + match[0].length,
+        });
+      }
+    }
+
+    const cityStatePattern = /\b(?:Bangkok|Pattaya|California|Los Angeles|New York|กรุงเทพมหานคร|เชียงใหม่|ภูเก็ต)\b/g;
+    while ((match = cityStatePattern.exec(text)) !== null) {
       entities.push({
         type: "LOCATION",
         text: match[0],
@@ -121,11 +209,40 @@ export function detectEntitiesWithRegex(
     }
   }
 
-  // Organizations
   if (enabledTypes.includes("ORGANIZATION")) {
-    const orgPattern = /\b(?:Hospital|Clinic|โรงพยาบาล[ก-๙]*|คลินิก[ก-๙]*)\b/gi;
+    const hospitalPattern = /\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Hospital|Medical\s+Center|Clinic)|โรงพยาบาล[ก-๙]+(?:\s+[ก-๙]+)*|คลินิก[ก-๙]+)\b/g;
     let match;
-    while ((match = orgPattern.exec(text)) !== null) {
+    while ((match = hospitalPattern.exec(text)) !== null) {
+      entities.push({
+        type: "ORGANIZATION",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const companyPattern = /\b[A-Z][a-zA-Z]*(?:X)?\s+Co\.?,?\s+Ltd\.?\b/g;
+    while ((match = companyPattern.exec(text)) !== null) {
+      entities.push({
+        type: "ORGANIZATION",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const insurancePattern = /\b[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s+Insurance\b/g;
+    while ((match = insurancePattern.exec(text)) !== null) {
+      entities.push({
+        type: "ORGANIZATION",
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    const govPattern = /\b(?:United\s+States\s+)?Department\s+of\s+[A-Z][a-z]+\b/g;
+    while ((match = govPattern.exec(text)) !== null) {
       entities.push({
         type: "ORGANIZATION",
         text: match[0],
@@ -154,8 +271,29 @@ export function detectEntitiesWithRegex(
     }
   }
 
-  // Remove duplicates (prioritize longer matches)
-  return removeDuplicateEntities(entities);
+  let filteredEntities = removeDuplicateEntities(entities);
+  
+  filteredEntities = filterFalsePositives(filteredEntities, text);
+  
+  filteredEntities = mergeOverlappingEntities(filteredEntities);
+  
+  filteredEntities = enhanceEntitiesWithContext(filteredEntities, text);
+  
+  return filteredEntities;
+}
+
+function isCommonOrganizationOrLocation(name: string): boolean {
+  const commonWords = [
+    "January", "February", "March", "April", "May", "June", "July", "August", 
+    "September", "October", "November", "December",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+    "Hospital", "Clinic", "Center", "Medical", "Health", "Insurance", "University",
+    "Company", "Corporation", "Department", "Street", "Avenue", "Road", "Boulevard",
+    "Bangkok", "Pattaya", "California", "Angeles", "York", "London", "Paris"
+  ];
+  
+  const words = name.split(/\s+/);
+  return words.some(word => commonWords.includes(word));
 }
 
 function removeDuplicateEntities(entities: Entity[]): Entity[] {

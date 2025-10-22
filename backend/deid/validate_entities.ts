@@ -83,9 +83,14 @@ ${customKeywords || "None"}
 **Instructions:**
 1. Validate each regex-detected entity (keep, modify, or remove)
 2. Find any MISSED entities, especially:
-   - Partial or abbreviated Thai names (e.g., "สมช" from "สมชาย")
-   - Thai patient/doctor references without full names
-   - Contextual identifiers
+   - Full names with titles (Mr., Ms., Dr., นาย, นาง, etc.)
+   - Names in context (born in, from, patient, doctor)
+   - Dates in text format (December 1, 2023, March 3, 1990)
+   - National IDs, passport numbers, policy numbers
+   - Complete addresses with Thai components (ชั้น, อาคาร, ถนน, etc.)
+   - Company names with Co., Ltd.
+   - Insurance providers
+   - Phone numbers with various separators (-, ‑, space)
 3. Assign confidence scores (0.0-1.0) to all entities
 4. Consider the custom keywords as additional entities to detect
 5. Return ONLY a JSON array of entities in this exact format:
@@ -101,19 +106,34 @@ ${customKeywords || "None"}
 ]
 
 **Entity Types:**
-- PERSON: Patient names, doctor names, Thai/English names
-- DATE: All date formats (numeric, Thai text)
-- LOCATION: Addresses, hospitals, departments
-- ID: Medical record numbers, national IDs
-- CONTACT: Phone numbers, emails
-- ORGANIZATION: Hospital names, clinic names
+- PERSON: Patient names, doctor names with titles (Dr., นพ., นาง, etc.)
+- DATE: All formats including "December 1, 2023", "March 3, 1990", "10 มิถุนายน 2564"
+- LOCATION: City names (Bangkok, Pattaya, California, Los Angeles), addresses, departments, rooms
+- ID: National IDs (13+ digits), passport numbers, medical records, insurance policy numbers
+- CONTACT: Phone numbers (with -, ‑, or space separators), emails
+- ORGANIZATION: Hospitals, companies (Co., Ltd.), insurance companies, government departments
 
-**Critical Rules:**
-- "start" and "end" must be exact character positions in the original text
+**Critical False Positive Rules - DO NOT tag:**
+- Month names alone (January, February, etc.) as PERSON
+- City/state names alone (Bangkok, Pattaya, California) as PERSON unless part of an address context
+- Organization keywords (Hospital, Clinic, Insurance) as PERSON
+- Dates like "December 1" or "March 3" as PERSON - these are DATE entities
+- Generic location words without proper names
+
+**Critical True Positive Rules - MUST tag:**
+- Names with titles: "Dr. Arnon Sukprasert", "Ms. Olivia Martinez", "นพ. อธิวัฒน์ ชัยประเสริฐ"
+- Birth dates in context: "born on March 3, 1990"
+- Complete dates: "December 1, 2023", "December 15, 2023"
+- National IDs with dashes: "987654321‑00"
+- Passport numbers: "M12345678"
+- Insurance policies: "WC‑99887766"
+- Phone with special dashes: "091‑888‑7777" (note the special ‑ character)
+- Companies: "InnovateX Co., Ltd."
+- Long Thai addresses with multiple components
+
+**Technical Rules:**
+- "start" and "end" must be exact UTF-8 character positions in the original text
 - Do NOT modify the original text
 - Include ALL entities with confidence >= 0.5
-- Partial Thai names are important - look for abbreviated patient names
-- DO NOT tag medication/drug names (e.g., paracetamol, aspirin, antibiotics) as PERSON
-- DO NOT tag medical procedures or tests (e.g., MRI, CT, Lab) as PERSON
 - Return ONLY the JSON array, no other text`;
 }
