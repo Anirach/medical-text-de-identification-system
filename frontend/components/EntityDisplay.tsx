@@ -48,7 +48,7 @@ export default function EntityDisplay({ entities, statistics }: EntityDisplayPro
                 <Badge className={ENTITY_COLORS[entity.type] || ""}>
                   {entity.type}
                 </Badge>
-                <span className="font-mono truncate">{entity.text}</span>
+                <span className="font-mono truncate">{String(entity.text)}</span>
               </div>
               {entity.confidence && (
                 <Badge variant="outline" className="ml-2 shrink-0">
