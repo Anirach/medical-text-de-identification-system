@@ -1,6 +1,4 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +13,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Plus, Trash2, Upload, Download, Edit2, Check, X, Loader2 } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
+import { useAuth } from "../contexts/AuthContext";
 import type { MaskKeyword, EntityType } from "~backend/deid/types";
 
 interface MaskListManagerProps {
@@ -33,10 +32,10 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const backend = useBackend();
-  const { isSignedIn, user } = useUser();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (isSignedIn && user) {
+    if (user) {
       loadMaskList();
     } else {
       const saved = localStorage.getItem("maskList");
@@ -48,16 +47,16 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
         }
       }
     }
-  }, [isSignedIn, user]);
+  }, [user]);
 
   useEffect(() => {
-    if (!isSignedIn) {
+    if (!user) {
       localStorage.setItem("maskList", JSON.stringify(maskList));
     }
-  }, [maskList, isSignedIn]);
+  }, [maskList, user]);
 
   const loadMaskList = async () => {
-    if (!isSignedIn || !user) return;
+    if (!user) return;
     
     setIsLoading(true);
     try {
@@ -85,7 +84,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
       return;
     }
 
-    if (isSignedIn && user) {
+    if (user) {
       setIsLoading(true);
       try {
         const result = await backend.deid.createMaskKeyword({
@@ -119,7 +118,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   };
 
   const handleRemove = async (item: MaskKeyword, index: number) => {
-    if (isSignedIn && user && item.id) {
+    if (user && item.id) {
       setIsLoading(true);
       try {
         await backend.deid.deleteMaskKeyword({ id: item.id });
@@ -157,7 +156,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
     const item = maskList.find((m) => m.id === editingId);
     if (!item) return;
 
-    if (isSignedIn && user && item.id) {
+    if (user && item.id) {
       setIsLoading(true);
       try {
         await backend.deid.updateMaskKeyword({
@@ -259,7 +258,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
     event.target.value = "";
   };
 
-  if (!isSignedIn) {
+  if (!user) {
     return (
       <Card>
         <CardHeader>
