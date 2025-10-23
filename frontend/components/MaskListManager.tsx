@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +59,10 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   }, [maskList, user]);
 
   const loadMaskList = async () => {
-    if (!user) return;
+    if (!user) {
+      setMaskList([]);
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -66,11 +70,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
       setMaskList(result.keywords);
     } catch (error) {
       console.error("Failed to load mask list:", error);
-      toast({
-        title: "Load Failed",
-        description: "Could not load your saved mask list",
-        variant: "destructive",
-      });
+      setMaskList([]);
     } finally {
       setIsLoading(false);
     }
@@ -267,8 +267,11 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
           <CardTitle>Custom Mask List</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Sign in to save and manage your custom mask keywords
+          <p className="text-sm text-muted-foreground text-center py-8">
+            <Link to="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>{" "}
+            to save and manage your custom mask keywords
           </p>
         </CardContent>
       </Card>
