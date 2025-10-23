@@ -181,17 +181,30 @@ export const logout = api<void, { session: Cookie<"session"> }>(
   }
 );
 
-export const getCurrentUser = api<void, CurrentUserResponse>(
+export const getCurrentUser = api<AuthParams, CurrentUserResponse>(
   { auth: false, expose: true, method: "GET", path: "/auth/me" },
-  async () => {
-    const authData = getAuthData();
-    if (!authData) {
+  async (params) => {
+    const token = params.session?.value;
+    if (!token) {
       return {};
     }
+
+    const result = await db.queryRow<SessionRow>`
+      SELECT u.id as user_id, u.email
+      FROM users u
+      WHERE u.id = (
+        SELECT user_id FROM sessions WHERE token = ${token} AND expires_at > NOW()
+      )
+    `;
+
+    if (!result) {
+      return {};
+    }
+
     return {
       user: {
-        id: authData.userID,
-        email: authData.email,
+        id: result.user_id.toString(),
+        email: result.email,
       },
     };
   }

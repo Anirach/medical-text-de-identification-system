@@ -104,7 +104,7 @@ export namespace auth {
             this.signup = this.signup.bind(this)
         }
 
-        public async getCurrentUser(): Promise<ResponseType<typeof api_auth_auth_getCurrentUser>> {
+        public async getCurrentUser(params: RequestType<typeof api_auth_auth_getCurrentUser>): Promise<ResponseType<typeof api_auth_auth_getCurrentUser>> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/auth/me`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_auth_auth_getCurrentUser>
