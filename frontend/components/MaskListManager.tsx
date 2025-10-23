@@ -33,26 +33,28 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const backend = useBackend();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, checkAuth } = useAuth();
 
   useEffect(() => {
-    if (authLoading) return;
-    
-    if (user) {
-      loadMaskList();
-    } else {
-      const saved = localStorage.getItem("maskList");
-      if (saved) {
-        try {
-          setMaskList(JSON.parse(saved));
-        } catch (error) {
-          console.error("Failed to load mask list:", error);
-        }
+    const init = async () => {
+      await checkAuth();
+      if (user) {
+        loadMaskList();
       } else {
-        setMaskList([]);
+        const saved = localStorage.getItem("maskList");
+        if (saved) {
+          try {
+            setMaskList(JSON.parse(saved));
+          } catch (error) {
+            console.error("Failed to load mask list:", error);
+          }
+        } else {
+          setMaskList([]);
+        }
       }
-    }
-  }, [user, authLoading]);
+    };
+    init();
+  }, []);
 
   useEffect(() => {
     if (!user) {

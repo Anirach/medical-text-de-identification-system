@@ -1,11 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Shield, LogOut, User } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Header() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, checkAuth } = useAuth();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
