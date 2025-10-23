@@ -269,6 +269,21 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
     event.target.value = "";
   };
 
+  if (!initialized || authLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Custom Mask List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!user) {
     return (
       <Card>
