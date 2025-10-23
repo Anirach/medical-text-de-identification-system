@@ -10,7 +10,7 @@ export default function Header() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const isActive = (path: string) => location.pathname === path;
 
