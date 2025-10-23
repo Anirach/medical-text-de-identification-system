@@ -1,1 +1,1 @@
-{"id": "medical-text-de-identification-system-wrh2", "lang": "typescript"}
+{"lang": "typescript"}
