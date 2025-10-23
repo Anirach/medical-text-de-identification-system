@@ -33,9 +33,11 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const backend = useBackend();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (user) {
       loadMaskList();
     } else {
@@ -50,7 +52,7 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
         setMaskList([]);
       }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (!user) {
