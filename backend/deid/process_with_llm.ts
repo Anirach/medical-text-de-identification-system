@@ -6,7 +6,7 @@ import { anonymizeText } from "./anonymize";
 
 // Processes medical text with LLM validation for enhanced accuracy
 export const processWithLLM = api<ProcessRequest, ProcessResponse>(
-  { expose: true, method: "POST", path: "/process-with-llm", auth: true },
+  { expose: true, method: "POST", path: "/process-with-llm", auth: false },
   async (req) => {
     const language = detectLanguage(req.text);
     

@@ -67,6 +67,10 @@ export interface UserInfo {
   email: string;
 }
 
+export interface CurrentUserResponse {
+  user?: UserInfo;
+}
+
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
@@ -177,13 +181,18 @@ export const logout = api<void, { session: Cookie<"session"> }>(
   }
 );
 
-export const getCurrentUser = api<void, UserInfo>(
-  { auth: true, expose: true, method: "GET", path: "/auth/me" },
+export const getCurrentUser = api<void, CurrentUserResponse>(
+  { auth: false, expose: true, method: "GET", path: "/auth/me" },
   async () => {
-    const authData = getAuthData()!;
+    const authData = getAuthData();
+    if (!authData) {
+      return {};
+    }
     return {
-      id: authData.userID,
-      email: authData.email,
+      user: {
+        id: authData.userID,
+        email: authData.email,
+      },
     };
   }
 );

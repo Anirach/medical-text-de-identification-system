@@ -6,7 +6,7 @@ import { anonymizeText } from "./anonymize";
 
 // Processes medical text to detect and anonymize PII/PHI
 export const process = api<ProcessRequest, ProcessResponse>(
-  { expose: true, method: "POST", path: "/process", auth: true },
+  { expose: true, method: "POST", path: "/process", auth: false },
   async (req) => {
     const language = detectLanguage(req.text);
     

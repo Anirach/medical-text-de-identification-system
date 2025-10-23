@@ -10,7 +10,10 @@ interface ListMaskKeywordsResponse {
 export const listMaskKeywords = api<void, ListMaskKeywordsResponse>(
   { expose: true, method: "GET", path: "/mask-keywords", auth: true },
   async () => {
-    const auth = getAuthData()!;
+    const auth = getAuthData();
+    if (!auth) {
+      return { keywords: [] };
+    }
     
     const rows = await db.queryAll<{
       id: number;

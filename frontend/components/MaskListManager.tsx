@@ -45,6 +45,8 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
         } catch (error) {
           console.error("Failed to load mask list:", error);
         }
+      } else {
+        setMaskList([]);
       }
     }
   }, [user]);
