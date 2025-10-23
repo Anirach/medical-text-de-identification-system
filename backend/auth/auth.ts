@@ -116,8 +116,8 @@ export const signup = api<SignupRequest, AuthResponse>(
         value: token,
         expires: expiresAt,
         httpOnly: true,
-        secure: true,
         sameSite: "Lax",
+        path: "/",
       },
       user: {
         id: userId.toString(),
@@ -155,8 +155,8 @@ export const login = api<LoginRequest, AuthResponse>(
         value: token,
         expires: expiresAt,
         httpOnly: true,
-        secure: true,
         sameSite: "Lax",
+        path: "/",
       },
       user: {
         id: userId.toString(),
@@ -174,8 +174,8 @@ export const logout = api<void, { session: Cookie<"session"> }>(
         value: "",
         expires: new Date(0),
         httpOnly: true,
-        secure: true,
         sameSite: "Lax",
+        path: "/",
       },
     };
   }
