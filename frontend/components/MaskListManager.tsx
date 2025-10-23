@@ -31,30 +31,35 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   const [editKeyword, setEditKeyword] = useState("");
   const [editEntityType, setEditEntityType] = useState<EntityType>("PERSON");
   const [isLoading, setIsLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
   const backend = useBackend();
   const { user, isLoading: authLoading, checkAuth } = useAuth();
 
   useEffect(() => {
-    const init = async () => {
-      await checkAuth();
-      if (user) {
-        loadMaskList();
-      } else {
-        const saved = localStorage.getItem("maskList");
-        if (saved) {
-          try {
-            setMaskList(JSON.parse(saved));
-          } catch (error) {
-            console.error("Failed to load mask list:", error);
-          }
-        } else {
-          setMaskList([]);
+    if (!initialized) {
+      checkAuth().finally(() => setInitialized(true));
+    }
+  }, [initialized, checkAuth]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    
+    if (user) {
+      loadMaskList();
+    } else {
+      const saved = localStorage.getItem("maskList");
+      if (saved) {
+        try {
+          setMaskList(JSON.parse(saved));
+        } catch (error) {
+          console.error("Failed to load mask list:", error);
         }
+      } else {
+        setMaskList([]);
       }
-    };
-    init();
-  }, []);
+    }
+  }, [user, initialized]);
 
   useEffect(() => {
     if (!user) {
