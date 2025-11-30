@@ -14,13 +14,40 @@ const MEDICAL_TERMS = new Set([
   'เบาหวาน', 'มะเร็ง', 'หัวใจ', 'ตับ', 'ไต', 'ปอด', 'สมอง', 'กระดูก',
 ]);
 
+// Thai honorific titles (คำนำหน้าชื่อ)
+const THAI_TITLES = [
+  // Academic titles
+  'ศ\\.?\\s*นพ\\.?', 'ศ\\.?\\s*พญ\\.?', 'ศ\\.?\\s*ดร\\.?', 'ศ\\.?',
+  'รศ\\.?\\s*นพ\\.?', 'รศ\\.?\\s*พญ\\.?', 'รศ\\.?\\s*ดร\\.?', 'รศ\\.?',
+  'ผศ\\.?\\s*นพ\\.?', 'ผศ\\.?\\s*พญ\\.?', 'ผศ\\.?\\s*ดร\\.?', 'ผศ\\.?',
+  // Medical titles
+  'นพ\\.?', 'พญ\\.?', 'ทพ\\.?', 'ทญ\\.?', 'ภก\\.?', 'ภญ\\.?',
+  'พ\\.?บ\\.?', 'ดร\\.?', 'น\\.?สพ\\.?', 'สพ\\.?ญ\\.?',
+  // Military titles
+  'พล\\.?อ\\.?', 'พล\\.?ท\\.?', 'พล\\.?ต\\.?', 'พล\\.?ร\\.?ต\\.?',
+  'พ\\.?อ\\.?', 'พ\\.?ท\\.?', 'พ\\.?ต\\.?', 'ร\\.?อ\\.?', 'ร\\.?ท\\.?', 'ร\\.?ต\\.?',
+  'จ\\.?ส\\.?อ\\.?', 'จ\\.?ส\\.?ท\\.?', 'จ\\.?ส\\.?ต\\.?',
+  'ส\\.?อ\\.?', 'ส\\.?ท\\.?', 'ส\\.?ต\\.?',
+  // Common titles
+  'นาย', 'นาง', 'นางสาว', 'น\\.?ส\\.?',
+  'คุณ', 'ม\\.?ร\\.?ว\\.?', 'ม\\.?ล\\.?', 'ม\\.?จ\\.?',
+  'หม่อมราชวงศ์', 'หม่อมหลวง', 'หม่อมเจ้า',
+];
+
+// Build regex pattern for Thai names with titles
+const THAI_TITLE_PATTERN = `(?:${THAI_TITLES.join('|')})`;
+const THAI_NAME_WITH_TITLE = new RegExp(
+  `${THAI_TITLE_PATTERN}\\s*[ก-๙]+(?:\\s+[ก-๙]+)*`,
+  'gi'
+);
+
 // Import regex patterns and anonymization logic
 const ENTITY_PATTERNS = {
   PERSON: [
-    // Thai names with titles
-    /(?:นาย|นาง|นางสาว|ด\.?ร\.?|ผศ\.?|รศ\.?|ศ\.?|พล\.?[อตตร]\.?|พ\.?[อตตร]\.?|ร\.?[อตตร]\.?|จ\.?[อส]\.?)\s*[ก-๙]+(?:\s+[ก-๙]+)*/gi,
+    // Thai names with titles (captures full name: title + first name + last name)
+    THAI_NAME_WITH_TITLE,
     // English names with titles
-    /(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Dr\.?|Prof\.?)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g,
+    /(?:Prof\.?|Assoc\.?\s*Prof\.?|Asst\.?\s*Prof\.?|Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Miss)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g,
   ],
   DATE: [
     // Thai date formats
