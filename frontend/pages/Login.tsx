@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Shield } from "lucide-react";
-import backend from "~backend/client";
+import client from "../client";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
@@ -31,7 +31,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const result = await backend.auth.login({ email, password });
+      const result = await client.auth.login(email, password);
       login(result.user);
       toast({
         title: "Login Successful",

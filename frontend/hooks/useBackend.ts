@@ -1,5 +1,5 @@
-import backend from "~backend/client";
+import client from "../client";
 
 export function useBackend() {
-  return backend;
+  return client;
 }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Shield } from "lucide-react";
-import backend from "~backend/client";
+import client from "../client";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Signup() {
@@ -50,7 +50,7 @@ export default function Signup() {
 
     setIsLoading(true);
     try {
-      const result = await backend.auth.signup({ email, password });
+      const result = await client.auth.signup(email, password);
       login(result.user);
       toast({
         title: "Account Created",

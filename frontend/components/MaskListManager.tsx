@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Plus, Trash2, Upload, Download, Edit2, Check, X, Loader2 } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { useAuth } from "../contexts/AuthContext";
-import type { MaskKeyword, EntityType } from "~backend/deid/types";
+import type { MaskKeyword, EntityType } from "../client";
 
 interface MaskListManagerProps {
   maskList: MaskKeyword[];
@@ -31,19 +31,49 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
   const [editKeyword, setEditKeyword] = useState("");
   const [editEntityType, setEditEntityType] = useState<EntityType>("PERSON");
   const [isLoading, setIsLoading] = useState(false);
-  const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
   const backend = useBackend();
-  const { user, isLoading: authLoading, checkAuth } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const loadMaskListRef = useRef(false);
+  const prevMaskListRef = useRef<string>('');
 
-  useEffect(() => {
-    if (!initialized) {
-      checkAuth().finally(() => setInitialized(true));
+  const loadMaskList = async () => {
+    if (!user) {
+      setMaskList([]);
+      return;
     }
-  }, [initialized, checkAuth]);
+    
+    // Prevent multiple simultaneous calls
+    if (loadMaskListRef.current) return;
+    
+    loadMaskListRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await backend.deid.listMaskKeywords();
+      setMaskList(result.keywords || []);
+    } catch (error: any) {
+      console.error("Failed to load mask list:", error);
+      // If unauthorized, user might not be logged in properly
+      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        // Don't show error, just use empty list
+        setMaskList([]);
+      } else {
+        setMaskList([]);
+        toast({
+          title: "Load Failed",
+          description: "Could not load mask keywords",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      loadMaskListRef.current = false;
+    }
+  };
 
   useEffect(() => {
-    if (!initialized) return;
+    // Wait for auth to finish loading
+    if (authLoading) return;
     
     if (user) {
       loadMaskList();
@@ -59,31 +89,18 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
         setMaskList([]);
       }
     }
-  }, [user, initialized]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
 
   useEffect(() => {
-    if (!user) {
-      localStorage.setItem("maskList", JSON.stringify(maskList));
+    // Only save if maskList actually changed and user is not logged in
+    const currentMaskList = JSON.stringify(maskList);
+    if (!user && maskList.length > 0 && prevMaskListRef.current !== currentMaskList) {
+      localStorage.setItem("maskList", currentMaskList);
+      prevMaskListRef.current = currentMaskList;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maskList, user]);
-
-  const loadMaskList = async () => {
-    if (!user) {
-      setMaskList([]);
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const result = await backend.deid.listMaskKeywords();
-      setMaskList(result.keywords);
-    } catch (error) {
-      console.error("Failed to load mask list:", error);
-      setMaskList([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAdd = async () => {
     if (!newKeyword.trim()) {
@@ -269,7 +286,8 @@ export default function MaskListManager({ maskList, setMaskList }: MaskListManag
     event.target.value = "";
   };
 
-  if (!initialized || authLoading) {
+  // Show loading only while actively checking auth
+  if (authLoading) {
     return (
       <Card>
         <CardHeader>

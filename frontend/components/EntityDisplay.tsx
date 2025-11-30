@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Entity } from "~backend/deid/types";
+import type { Entity } from "../client";
 
 interface EntityDisplayProps {
   entities: Entity[];

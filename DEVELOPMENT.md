@@ -1,131 +1,115 @@
 # Getting Started
 
-This project consists of an Encore application. Follow the steps below to get the app running locally.
+This project consists of a NestJS backend and React frontend. Follow the steps below to get the app running locally.
 
 ## Prerequisites
 
-If this is your first time using Encore, you need to install the CLI that runs the local development environment. Use the appropriate command for your system:
-
-- **macOS:** `brew install encoredev/tap/encore`
-- **Linux:** `curl -L https://encore.dev/install.sh | bash`
-- **Windows:** `iwr https://encore.dev/install.ps1 | iex`
-
-You also need to have bun installed for package management. If you don't have bun installed, you can install it by running:
-
-```bash
-npm install -g bun
-```
+- **Node.js**: v18 or higher
+- **PostgreSQL**: v14 or higher
+- **npm**: v9 or higher
 
 ## Running the Application
 
-### Backend Setup
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Start the Encore development server:
-   ```bash
-   encore run
-   ```
-
-The backend will be available at the URL shown in your terminal (typically `http://localhost:4000`).
-
-
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install the dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npx vite dev
-   ```
-
-The frontend will be available at `http://localhost:5173` (or the next available port).
-
-
-### Generate Frontend Client
-To generate the frontend client, run the following command in the `backend` directory:
+### 1. Install Dependencies
 
 ```bash
-encore gen client --target leap
+# Install all dependencies (root, backend, and frontend)
+npm run install:all
 ```
 
-## Deployment
+### 2. Setup Environment
 
-### Self-hosting
-See the [self-hosting instructions](https://encore.dev/docs/self-host/docker-build) for how to use encore build docker to create a Docker image and
-configure it.
-
-### Encore Cloud Platform
-
-#### Step 1: Login to your Encore Cloud Account
-
-Before deploying, ensure you have authenticated the Encore CLI with your Encore account (same as your Leap account)
+Create a `.env` file in the `backend` directory:
 
 ```bash
-encore auth login
+# Database connection
+DATABASE_URL="postgresql://user:password@localhost:5432/deid_db?schema=public"
+
+# Gemini API Key for LLM validation (optional)
+GEMINI_API_KEY="your-gemini-api-key"
+
+# Frontend URL for CORS
+FRONTEND_URL="http://localhost:5173"
+
+# Server port
+PORT=4000
 ```
 
-#### Step 2: Set Up Git Remote
-
-Add Encore's git remote to enable direct deployment:
+### 3. Setup Database
 
 ```bash
-git remote add encore encore://medical-text-de-identification-system-wrh2
+# Generate Prisma client
+npm run prisma:generate
+
+# Run database migrations
+npm run prisma:migrate
 ```
 
-#### Step 3: Deploy Your Application
-
-Deploy by pushing your code:
+### 4. Start Development Servers
 
 ```bash
-git add -A .
-git commit -m "Deploy to Encore Cloud"
-git push encore
+# Start both backend and frontend
+npm run dev
 ```
 
-Monitor your deployment progress in the [Encore Cloud dashboard](https://app.encore.dev/medical-text-de-identification-system-wrh2/deploys).
-
-## GitHub Integration (Recommended for Production)
-
-For production applications, we recommend integrating with GitHub instead of using Encore's managed git:
-
-### Connecting Your GitHub Account
-
-1. Open your app in the **Encore Cloud dashboard**
-2. Navigate to Encore Cloud [GitHub Integration settings](https://app.encore.cloud/medical-text-de-identification-system-wrh2/settings/integrations/github)
-3. Click **Connect Account to GitHub**
-4. Grant access to your repository
-
-Once connected, pushing to your GitHub repository will automatically trigger deployments. Encore Cloud Pro users also get Preview Environments for each pull request.
-
-### Deploy via GitHub
-
-After connecting GitHub, deploy by pushing to your repository:
+Or run them separately:
 
 ```bash
-git add -A .
-git commit -m "Deploy via GitHub"
-git push origin main
+# Terminal 1: Backend
+npm run dev:backend
+
+# Terminal 2: Frontend
+npm run dev:frontend
+```
+
+The application will be available at:
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:4000`
+
+## Building for Production
+
+```bash
+# Build both backend and frontend
+npm run build
+
+# Start production server
+npm run start
+```
+
+## Database Commands
+
+```bash
+# Generate Prisma client after schema changes
+npm run prisma:generate
+
+# Create and apply a new migration
+cd backend && npx prisma migrate dev --name your_migration_name
+
+# Apply pending migrations in production
+npm run prisma:migrate
+
+# Open Prisma Studio (database GUI)
+cd backend && npx prisma studio
+```
+
+## Project Structure
+
+```
+/
+├── backend/              # NestJS backend
+│   ├── src/              # Source code
+│   ├── prisma/           # Database schema and migrations
+│   └── package.json
+├── frontend/             # React frontend
+│   ├── components/       # UI components
+│   ├── pages/            # Route pages
+│   └── package.json
+└── package.json          # Root package.json with workspace scripts
 ```
 
 ## Additional Resources
 
-- [Encore Documentation](https://encore.dev/docs)
-- [Deployment Guide](https://encore.dev/docs/platform/deploy/deploying)
-- [GitHub Integration](https://encore.dev/docs/platform/integrations/github)
-- [Encore Cloud Dashboard](https://app.encore.dev)
-
-
-
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Vite Documentation](https://vitejs.dev)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)

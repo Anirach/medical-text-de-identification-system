@@ -7,13 +7,46 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname),
-      '~backend/client': path.resolve(__dirname, './client'),
-      '~backend': path.resolve(__dirname, '../backend'),
     },
   },
   plugins: [tailwindcss(), react()],
-  mode: "development",
+  server: {
+    port: 5173,
+    proxy: {
+      '/auth': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/process': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/process-with-llm': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/validate-entities': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/mask-keywords': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+      },
+    },
+  },
   build: {
+    outDir: 'dist',
     minify: false,
-  }
+  },
 })

@@ -1,14 +1,12 @@
-// @ts-nocheck
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Copy, Download, Sparkles } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
-import type { AnonymizationMethod, EntityType } from "~backend/deid/types";
+import type { AnonymizationMethod, EntityType } from "../client";
 import ConfigPanel from "../components/ConfigPanel";
 import EntityDisplay from "../components/EntityDisplay";
 import MaskListManager from "../components/MaskListManager";

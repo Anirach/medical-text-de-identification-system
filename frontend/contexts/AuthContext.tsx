@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import backend from "~backend/client";
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from "react";
+import client from "../client";
 
 interface User {
   id: string;
@@ -19,11 +19,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const checkingRef = useRef(false);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (checkingRef.current) return;
+    
+    checkingRef.current = true;
     setIsLoading(true);
     try {
-      const response = await backend.auth.getCurrentUser();
+      const response = await client.auth.getCurrentUser();
       if (response.user) {
         setUser(response.user);
       } else {
@@ -33,8 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } finally {
       setIsLoading(false);
+      checkingRef.current = false;
     }
-  };
+  }, []);
 
   const login = (user: User) => {
     setUser(user);
@@ -42,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await backend.auth.logout();
+      await client.auth.logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

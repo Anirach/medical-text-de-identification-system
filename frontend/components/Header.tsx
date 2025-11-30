@@ -10,7 +10,9 @@ export default function Header() {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 

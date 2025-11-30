@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import type { AnonymizationMethod, EntityType } from "~backend/deid/types";
+import type { AnonymizationMethod, EntityType } from "../client";
 
 interface ConfigPanelProps {
   method: AnonymizationMethod;

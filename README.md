@@ -11,17 +11,17 @@ This system helps healthcare organizations and researchers comply with privacy r
 - **Multiple Anonymization Methods**: Redact, mask, generalize, or pseudonymize sensitive data
 - **Entity Detection**: Automatically detects persons, dates, locations, IDs, contact information, and organizations
 - **Custom Mask Lists**: User-specific keyword lists for domain-specific terminology
-- **Multi-language Support**: Automatic language detection
+- **Multi-language Support**: Automatic language detection (Thai/English)
 - **Batch Processing**: Process multiple documents simultaneously
-- **User Authentication**: Secure access with Clerk authentication
+- **User Authentication**: Secure access with session-based authentication
 - **Real-time Processing**: Instant de-identification with visual entity highlighting
 
 ## Tech Stack
 
 ### Backend
-- **Encore.ts**: TypeScript backend framework
-- **PostgreSQL**: Database for storing user mask lists
-- **Clerk**: Authentication and user management
+- **NestJS**: TypeScript backend framework
+- **Prisma**: Database ORM
+- **PostgreSQL**: Database for storing users and mask lists
 
 ### Frontend
 - **React**: UI framework
@@ -34,51 +34,59 @@ This system helps healthcare organizations and researchers comply with privacy r
 ## Prerequisites
 
 - **Node.js**: v18 or higher
-- **Encore CLI**: Install from [encore.dev](https://encore.dev)
+- **PostgreSQL**: v14 or higher
 
 ## Installation
 
-### 1. Install Encore CLI
-
-```bash
-# macOS
-brew install encoredev/tap/encore
-
-# Linux
-curl -L https://encore.dev/install.sh | bash
-
-# Windows
-iwr https://encore.dev/install.ps1 | iex
-```
-
-### 2. Clone and Setup
+### 1. Clone and Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd medical-text-de-identification-system
 
-# No npm install needed - dependencies are auto-installed by Encore
+# Install all dependencies
+npm run install:all
 ```
 
-### 3. Configure Secrets
+### 2. Configure Environment
 
-The application requires a Clerk secret key. Set it up through the Leap settings:
+Create a `.env` file in the `backend` directory:
 
-1. Open **Settings** in the Leap sidebar
-2. Add the secret: `ClerkSecretKey`
-3. Get your Clerk secret key from [Clerk Dashboard](https://dashboard.clerk.com)
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/deid_db?schema=public"
+
+# Gemini API Key for LLM validation (optional)
+GEMINI_API_KEY="your-gemini-api-key"
+
+# Frontend URL for CORS
+FRONTEND_URL="http://localhost:5173"
+
+# Server port
+PORT=4000
+```
+
+### 3. Setup Database
+
+```bash
+# Generate Prisma client
+npm run prisma:generate
+
+# Run migrations
+npm run prisma:migrate
+```
 
 ### 4. Run the Application
 
 ```bash
-# Start the development server
-encore run
+# Start both backend and frontend in development mode
+npm run dev
 ```
 
 The application will be available at:
-- Frontend: `http://localhost:4000`
-- Backend API: `http://localhost:4000/api`
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:4000`
 
 ## Core Concepts
 
@@ -110,120 +118,94 @@ Input Text → Language Detection → Entity Detection → Anonymization → Out
                                   Custom Mask List
 ```
 
-#### 1. Input Processing
-- User submits medical text through the web interface
-- Text can be processed individually or in batches
+## API Endpoints
 
-#### 2. Language Detection
-- Automatically detects the language of the input text
-- Ensures appropriate processing for different languages
+### Authentication
+- `POST /auth/signup` - Create new account
+- `POST /auth/login` - Login
+- `POST /auth/logout` - Logout
+- `GET /auth/me` - Get current user
 
-#### 3. Entity Detection
-The system uses two detection mechanisms:
-
-**Regex Patterns** (`backend/deid/regex_patterns.ts`):
-- Pattern-based detection for structured data (emails, phones, dates, IDs)
-- Language-agnostic and highly accurate for formatted information
-
-**Custom Mask List** (`backend/deid/mask_list.ts`):
-- User-defined keywords stored in PostgreSQL
-- Domain-specific terms (drug names, procedure names, etc.)
-- Enables personalized detection beyond standard patterns
-
-#### 4. Anonymization
-- Entities are sorted in reverse order to preserve text positions
-- Replacement strategy is applied based on selected method
-- Pseudonymization maintains consistency across the same document
-
-#### 5. Output
-- De-identified text
-- List of detected entities with positions and types
-- Statistics showing entity counts by type
-
-### Database Schema
-
-```sql
-mask_keywords
-├── id (BIGSERIAL PRIMARY KEY)
-├── user_id (TEXT) - Links to Clerk user
-├── keyword (TEXT) - The term to detect
-├── entity_type (TEXT) - Category (PERSON, LOCATION, etc.)
-├── created_at (TIMESTAMPTZ)
-└── updated_at (TIMESTAMPTZ)
-```
-
-### API Endpoints
-
-#### De-Identification
+### De-Identification
 - `POST /process` - Process text and return de-identified version
+- `POST /process-with-llm` - Process with LLM validation (requires GEMINI_API_KEY)
+- `POST /validate-entities` - Validate entities using LLM
 
-#### Mask List Management
+### Mask List Management
 - `GET /mask-keywords` - List user's custom keywords
 - `POST /mask-keywords` - Create new keyword
 - `PUT /mask-keywords/:id` - Update existing keyword
 - `DELETE /mask-keywords/:id` - Delete keyword
-
-All endpoints require authentication via Clerk.
 
 ## Project Structure
 
 ```
 /
 ├── backend/
-│   ├── auth/                 # Clerk authentication handler
-│   │   ├── auth.ts
-│   │   └── encore.service.ts
-│   ├── db/                   # Database configuration
-│   │   ├── index.ts
-│   │   └── migrations/
-│   │       └── 001_create_tables.up.sql
-│   └── deid/                 # De-identification service
-│       ├── anonymize.ts      # Text anonymization logic
-│       ├── encore.service.ts
-│       ├── language_detection.ts
-│       ├── mask_list.ts      # Custom keyword management
-│       ├── process.ts        # Main processing endpoint
-│       ├── process_with_llm.ts
-│       ├── regex_patterns.ts # Pattern-based detection
-│       ├── types.ts          # TypeScript interfaces
-│       └── validate_entities.ts
+│   ├── src/
+│   │   ├── main.ts              # Application entry point
+│   │   ├── app.module.ts        # Root module
+│   │   ├── auth/                # Authentication module
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   └── auth.guard.ts
+│   │   ├── deid/                # De-identification module
+│   │   │   ├── deid.module.ts
+│   │   │   ├── deid.controller.ts
+│   │   │   ├── deid.service.ts
+│   │   │   ├── types.ts
+│   │   │   ├── anonymize.ts
+│   │   │   ├── regex_patterns.ts
+│   │   │   ├── language_detection.ts
+│   │   │   └── entity_filters.ts
+│   │   └── prisma/              # Database module
+│   │       ├── prisma.module.ts
+│   │       └── prisma.service.ts
+│   ├── prisma/
+│   │   └── schema.prisma        # Database schema
+│   └── package.json
 └── frontend/
-    ├── App.tsx               # Main app component
-    ├── components/           # Reusable UI components
-    │   ├── ConfigPanel.tsx
-    │   ├── EntityDisplay.tsx
-    │   ├── Footer.tsx
-    │   ├── Header.tsx
-    │   ├── Hero.tsx
-    │   ├── MaskListManager.tsx
-    │   └── TechStack.tsx
-    ├── hooks/
-    │   └── useBackend.ts
-    └── pages/                # Route pages
-        ├── Batch.tsx
-        ├── DeIdentify.tsx
-        └── Home.tsx
+    ├── App.tsx                  # Main app component
+    ├── client.ts                # API client
+    ├── components/              # Reusable UI components
+    ├── contexts/                # React contexts
+    ├── hooks/                   # Custom hooks
+    ├── pages/                   # Route pages
+    └── package.json
 ```
 
 ## Development
 
-### Running Tests
+### Running in Development Mode
 
 ```bash
-encore test
+# Start both backend and frontend
+npm run dev
+
+# Or run separately
+npm run dev:backend
+npm run dev:frontend
 ```
 
 ### Building for Production
 
 ```bash
-encore build
+# Build both backend and frontend
+npm run build
+
+# Start production server
+npm run start
 ```
 
 ### Database Migrations
 
-Migrations are automatically applied by Encore. New migrations should be added to:
-```
-backend/db/migrations/XXX_description.up.sql
+```bash
+# Create a new migration
+cd backend && npx prisma migrate dev --name migration_name
+
+# Apply migrations
+npm run prisma:migrate
 ```
 
 ## Example Usage
@@ -231,13 +213,15 @@ backend/db/migrations/XXX_description.up.sql
 ### Single Text Processing
 
 ```typescript
-import backend from "~backend/client";
-
-const result = await backend.deid.process({
-  text: "Patient John Doe was admitted on 01/15/2024.",
-  method: "mask",
-  enabledEntityTypes: ["PERSON", "DATE"],
-  customMaskList: []
+const result = await fetch('/process', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    text: "Patient John Doe was admitted on 01/15/2024.",
+    method: "mask",
+    enabledEntityTypes: ["PERSON", "DATE"],
+    customMaskList: []
+  })
 });
 
 // Result:
@@ -247,52 +231,26 @@ const result = await backend.deid.process({
 //     { type: "PERSON", text: "John Doe", start: 8, end: 16 },
 //     { type: "DATE", text: "01/15/2024", start: 36, end: 46 }
 //   ],
-//   language: "en",
+//   language: "English",
 //   statistics: { totalEntities: 2, byType: { PERSON: 1, DATE: 1, ... } }
 // }
 ```
 
-### Custom Mask List
-
-```typescript
-// Add a custom keyword
-await backend.deid.createMaskKeyword({
-  keyword: "Metformin",
-  entityType: "ORGANIZATION"
-});
-
-// Use in processing
-const result = await backend.deid.process({
-  text: "Patient prescribed Metformin 500mg.",
-  method: "mask",
-  enabledEntityTypes: ["ORGANIZATION"],
-  customMaskList: [{ keyword: "Metformin", entityType: "ORGANIZATION" }]
-});
-```
-
 ## Security & Privacy
 
-- All API endpoints require authentication
-- User data is isolated by `user_id`
+- All API endpoints require authentication (except /process for demo)
+- User data is isolated by user_id
 - Text processing happens server-side
 - No medical text is stored permanently
-- Clerk handles secure authentication
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Run tests: `encore test`
-4. Build: `encore build`
-5. Submit a pull request
+- Session-based authentication with secure cookies
 
 ## License
 
-[Your License Here]
+MIT License
 
 ## Support
 
 For issues and questions:
 - GitHub Issues: [Repository Issues]
-- Documentation: [Encore.ts Docs](https://encore.dev/docs)
-- Clerk Docs: [Clerk Documentation](https://clerk.com/docs)
+- NestJS Docs: [NestJS Documentation](https://docs.nestjs.com)
+- Prisma Docs: [Prisma Documentation](https://www.prisma.io/docs)
