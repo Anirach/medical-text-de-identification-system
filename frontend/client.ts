@@ -1,7 +1,7 @@
 // API Client for NestJS backend
 
-// Use relative paths in development (via Vite proxy) or absolute URL in production
-const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://localhost:4000');
+// Use relative paths - works with Vite proxy in dev and Vercel rewrites in production
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export interface User {
   id: string;
