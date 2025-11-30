@@ -158,6 +158,38 @@ interface Entity {
   confidence?: number;
 }
 
+interface MaskKeyword {
+  id?: number;
+  keyword: string;
+  entityType: string;
+}
+
+// Detect entities from custom mask keywords
+function detectFromCustomMaskList(text: string, maskList: MaskKeyword[]): Entity[] {
+  const entities: Entity[] = [];
+  
+  for (const item of maskList) {
+    if (!item.keyword || !item.keyword.trim()) continue;
+    
+    // Escape special regex characters in the keyword
+    const escapedKeyword = item.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedKeyword, 'gi');
+    
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      entities.push({
+        type: item.entityType,
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+        confidence: 1.0, // Highest confidence for user-defined keywords
+      });
+    }
+  }
+  
+  return entities;
+}
+
 // Check if text contains medical terms (not person names)
 function isMedicalTerm(text: string): boolean {
   const lower = text.toLowerCase();
@@ -201,8 +233,14 @@ function detectThaiNamesFromCorpus(text: string): Entity[] {
   return entities;
 }
 
-function detectEntities(text: string, enabledTypes: string[]): Entity[] {
+function detectEntities(text: string, enabledTypes: string[], customMaskList: MaskKeyword[] = []): Entity[] {
   const entities: Entity[] = [];
+  
+  // 0. Detect from custom mask list (highest priority)
+  if (customMaskList.length > 0) {
+    const customEntities = detectFromCustomMaskList(text, customMaskList);
+    entities.push(...customEntities);
+  }
   
   // 1. Detect Thai names with titles (highest priority)
   if (enabledTypes.includes('PERSON')) {
@@ -330,13 +368,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { text, method = 'mask', enabledEntityTypes = ['PERSON', 'DATE', 'LOCATION', 'ID', 'CONTACT', 'ORGANIZATION'] } = req.body;
+    const { 
+      text, 
+      method = 'mask', 
+      enabledEntityTypes = ['PERSON', 'DATE', 'LOCATION', 'ID', 'CONTACT', 'ORGANIZATION'],
+      customMaskList = []
+    } = req.body;
 
     if (!text) {
       return res.status(400).json({ message: 'Text is required' });
     }
 
-    const entities = detectEntities(text, enabledEntityTypes);
+    const entities = detectEntities(text, enabledEntityTypes, customMaskList);
     const deidentifiedText = anonymize(text, entities, method);
 
     const statistics = {

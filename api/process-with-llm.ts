@@ -10,6 +10,37 @@ interface Entity {
   confidence?: number;
 }
 
+interface MaskKeyword {
+  id?: number;
+  keyword: string;
+  entityType: string;
+}
+
+// Detect entities from custom mask keywords
+function detectFromCustomMaskList(text: string, maskList: MaskKeyword[]): Entity[] {
+  const entities: Entity[] = [];
+  
+  for (const item of maskList) {
+    if (!item.keyword || !item.keyword.trim()) continue;
+    
+    const escapedKeyword = item.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedKeyword, 'gi');
+    
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      entities.push({
+        type: item.entityType,
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+        confidence: 1.0,
+      });
+    }
+  }
+  
+  return entities;
+}
+
 // Thai honorific titles (คำนำหน้าชื่อ) - ordered by priority
 const THAI_TITLES = [
   // Combined academic + medical titles
@@ -121,8 +152,14 @@ const ENTITY_PATTERNS = {
   ],
 };
 
-function detectEntitiesWithRegex(text: string, enabledTypes: string[]): Entity[] {
+function detectEntitiesWithRegex(text: string, enabledTypes: string[], customMaskList: MaskKeyword[] = []): Entity[] {
   const entities: Entity[] = [];
+  
+  // 0. Detect from custom mask list (highest priority)
+  if (customMaskList.length > 0) {
+    const customEntities = detectFromCustomMaskList(text, customMaskList);
+    entities.push(...customEntities);
+  }
   
   // 1. Detect Thai names with titles (highest priority)
   if (enabledTypes.includes('PERSON')) {
@@ -290,14 +327,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { text, method = 'mask', enabledEntityTypes = ['PERSON', 'DATE', 'LOCATION', 'ID', 'CONTACT', 'ORGANIZATION'] } = req.body;
+    const { 
+      text, 
+      method = 'mask', 
+      enabledEntityTypes = ['PERSON', 'DATE', 'LOCATION', 'ID', 'CONTACT', 'ORGANIZATION'],
+      customMaskList = []
+    } = req.body;
 
     if (!text) {
       return res.status(400).json({ message: 'Text is required' });
     }
 
-    // Step 1: Detect entities with regex
-    let entities = detectEntitiesWithRegex(text, enabledEntityTypes);
+    // Step 1: Detect entities with regex and custom mask list
+    let entities = detectEntitiesWithRegex(text, enabledEntityTypes, customMaskList);
     
     // Step 2: Remove overlapping entities
     entities.sort((a, b) => a.start - b.start);
