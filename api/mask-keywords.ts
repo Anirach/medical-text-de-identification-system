@@ -1,7 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Use global prisma instance to prevent connection issues in serverless
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 async function getUserFromSession(req: VercelRequest): Promise<{ id: bigint; email: string } | null> {
   const cookies = req.headers.cookie?.split(';').reduce((acc, c) => {

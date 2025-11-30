@@ -2,7 +2,10 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
+// Use global prisma instance to prevent connection issues in serverless
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex');
