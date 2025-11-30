@@ -12,27 +12,80 @@ interface Entity {
 
 // Thai honorific titles (คำนำหน้าชื่อ)
 const THAI_TITLES = [
-  'ศ\\.?\\s*นพ\\.?', 'ศ\\.?\\s*พญ\\.?', 'ศ\\.?\\s*ดร\\.?', 'ศ\\.?',
-  'รศ\\.?\\s*นพ\\.?', 'รศ\\.?\\s*พญ\\.?', 'รศ\\.?\\s*ดร\\.?', 'รศ\\.?',
-  'ผศ\\.?\\s*นพ\\.?', 'ผศ\\.?\\s*พญ\\.?', 'ผศ\\.?\\s*ดร\\.?', 'ผศ\\.?',
+  // Academic titles (longer patterns first)
+  'ศ\\.?\\s*นพ\\.?', 'ศ\\.?\\s*พญ\\.?', 'ศ\\.?\\s*ดร\\.?',
+  'รศ\\.?\\s*นพ\\.?', 'รศ\\.?\\s*พญ\\.?', 'รศ\\.?\\s*ดร\\.?',
+  'ผศ\\.?\\s*นพ\\.?', 'ผศ\\.?\\s*พญ\\.?', 'ผศ\\.?\\s*ดร\\.?',
+  'ศ\\.?', 'รศ\\.?', 'ผศ\\.?',
+  // Medical titles
   'นพ\\.?', 'พญ\\.?', 'ทพ\\.?', 'ทญ\\.?', 'ภก\\.?', 'ภญ\\.?',
+  'พ\\.?บ\\.?', 'ดร\\.?',
+  // Military titles
   'พล\\.?อ\\.?', 'พล\\.?ท\\.?', 'พล\\.?ต\\.?',
   'พ\\.?อ\\.?', 'พ\\.?ท\\.?', 'พ\\.?ต\\.?',
   'ร\\.?อ\\.?', 'ร\\.?ท\\.?', 'ร\\.?ต\\.?',
+  // Common titles
   'นาย', 'นาง', 'นางสาว', 'น\\.?ส\\.?', 'คุณ',
   'ม\\.?ร\\.?ว\\.?', 'ม\\.?ล\\.?', 'ม\\.?จ\\.?',
 ];
 
 const THAI_TITLE_PATTERN = `(?:${THAI_TITLES.join('|')})`;
-const THAI_NAME_WITH_TITLE = new RegExp(
-  `${THAI_TITLE_PATTERN}\\s*[ก-๙]+(?:\\s+[ก-๙]+)*`,
-  'gi'
-);
+
+// Organization/place prefixes that should NOT be part of person names
+const STOP_WORDS = [
+  'รพ', 'โรงพยาบาล', 'คลินิก', 'ศูนย์', 'สถาบัน', 'มหาวิทยาลัย', 'โรงเรียน',
+  'บริษัท', 'ห้างหุ้นส่วน', 'สมาคม', 'มูลนิธิ', 'องค์กร', 'กรม', 'กระทรวง',
+  'ถนน', 'ซอย', 'หมู่บ้าน', 'ตำบล', 'อำเภอ', 'จังหวัด', 'แขวง', 'เขต',
+  'วันที่', 'เวลา', 'โทร', 'อีเมล', 'ที่อยู่',
+];
+
+// Function to extract person name with title
+function extractThaiPersonName(text: string, startIndex: number): { name: string; end: number } | null {
+  const remaining = text.slice(startIndex);
+  
+  const titleRegex = new RegExp(`^(${THAI_TITLE_PATTERN})\\s*`, 'i');
+  const titleMatch = remaining.match(titleRegex);
+  
+  if (!titleMatch) return null;
+  
+  let name = titleMatch[0];
+  let pos = titleMatch[0].length;
+  let wordCount = 0;
+  const maxWords = 2;
+  
+  while (wordCount < maxWords && pos < remaining.length) {
+    const spaceMatch = remaining.slice(pos).match(/^\s+/);
+    if (spaceMatch) {
+      pos += spaceMatch[0].length;
+    }
+    
+    let isStopWord = false;
+    for (const stopWord of STOP_WORDS) {
+      if (remaining.slice(pos).startsWith(stopWord)) {
+        isStopWord = true;
+        break;
+      }
+    }
+    if (isStopWord) break;
+    
+    const wordMatch = remaining.slice(pos).match(/^[ก-๙]+/);
+    if (!wordMatch) break;
+    
+    if (STOP_WORDS.includes(wordMatch[0])) break;
+    
+    name += (wordCount > 0 || spaceMatch ? ' ' : '') + wordMatch[0];
+    pos += wordMatch[0].length;
+    wordCount++;
+  }
+  
+  if (wordCount === 0) return null;
+  
+  return { name: name.trim(), end: startIndex + pos };
+}
 
 // Basic regex patterns for initial detection
 const ENTITY_PATTERNS = {
   PERSON: [
-    THAI_NAME_WITH_TITLE,
     /(?:Prof\.?|Assoc\.?\s*Prof\.?|Asst\.?\s*Prof\.?|Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Miss)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g,
   ],
   DATE: [
@@ -59,12 +112,39 @@ const ENTITY_PATTERNS = {
 function detectEntitiesWithRegex(text: string, enabledTypes: string[]): Entity[] {
   const entities: Entity[] = [];
   
+  // 1. Detect Thai names with titles (highest priority)
+  if (enabledTypes.includes('PERSON')) {
+    const titleRegex = new RegExp(THAI_TITLE_PATTERN, 'gi');
+    let match;
+    while ((match = titleRegex.exec(text)) !== null) {
+      const result = extractThaiPersonName(text, match.index);
+      if (result) {
+        entities.push({
+          type: 'PERSON',
+          text: result.name,
+          start: match.index,
+          end: result.end,
+          confidence: 0.95,
+        });
+        titleRegex.lastIndex = result.end;
+      }
+    }
+  }
+  
+  // 2. Use regex patterns for other entity types
   for (const type of enabledTypes) {
     const patterns = ENTITY_PATTERNS[type as keyof typeof ENTITY_PATTERNS] || [];
     for (const pattern of patterns) {
       const regex = new RegExp(pattern.source, pattern.flags);
       let match;
       while ((match = regex.exec(text)) !== null) {
+        // Check if already covered by Thai name detection
+        const alreadyCovered = entities.some(e => 
+          match!.index >= e.start && 
+          match!.index + match![0].length <= e.end
+        );
+        if (alreadyCovered) continue;
+        
         entities.push({
           type,
           text: match[0],
