@@ -1,25 +1,22 @@
 {
   "version": 2,
-  "framework": "vite",
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist",
   "builds": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node",
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
       "config": {
-        "includeFiles": [
-          "backend/**",
-          "!backend/node_modules/**"
-        ]
+        "distDir": "dist"
       }
+    },
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/favicon.ico",
-      "dest": "/api/index.ts"
+      "status": 204
     },
     {
       "src": "/auth/(.*)",
@@ -38,12 +35,12 @@
       "dest": "/api/index.ts"
     },
     {
-      "src": "/mask-keywords/(.*)",
+      "src": "/mask-keywords(.*)",
       "dest": "/api/index.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/frontend/$1"
     }
   ]
 }
