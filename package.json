@@ -12,15 +12,10 @@
     "start": "cd backend && npm run start:prod",
     "prisma:generate": "cd backend && npm run prisma:generate",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "postinstall": "npm run prisma:generate -w backend || true"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {
     "@vercel/node": "^5.5.13",
     "concurrently": "^9.1.2"
-  },
-  "workspaces": [
-    "backend",
-    "frontend"
-  ]
+  }
 }
