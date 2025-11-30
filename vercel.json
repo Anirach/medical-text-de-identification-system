@@ -1,21 +1,21 @@
 {
   "version": 2,
-  "installCommand": "npm install && cd backend && npm install && npx prisma generate && cd ../frontend && npm install",
+  "installCommand": "npm install && npx prisma generate && cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/index.ts": {
-      "includeFiles": "backend/**"
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
-    { "source": "/auth/:path*", "destination": "/api" },
-    { "source": "/process", "destination": "/api" },
-    { "source": "/process-with-llm", "destination": "/api" },
-    { "source": "/validate-entities", "destination": "/api" },
-    { "source": "/mask-keywords", "destination": "/api" },
-    { "source": "/mask-keywords/:path*", "destination": "/api" }
+    { "source": "/auth/:path*", "destination": "/api/auth" },
+    { "source": "/process", "destination": "/api/process" },
+    { "source": "/process-with-llm", "destination": "/api/process-with-llm" },
+    { "source": "/validate-entities", "destination": "/api/validate-entities" },
+    { "source": "/mask-keywords/:path*", "destination": "/api/mask-keywords" },
+    { "source": "/mask-keywords", "destination": "/api/mask-keywords" }
   ]
 }
 

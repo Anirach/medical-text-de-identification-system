@@ -10,13 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": false,
-    "declarationMap": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["api/**/*", "backend/src/**/*"],
-  "exclude": ["node_modules", "frontend"]
+  "include": ["api/**/*"],
+  "exclude": ["node_modules", "frontend", "backend"]
 }
 
