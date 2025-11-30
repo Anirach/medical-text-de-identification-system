@@ -1,10 +1,24 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { THAI_NAMES } from './thai-names';
+
+// Medical terms that should NOT be detected as person names
+const MEDICAL_TERMS = new Set([
+  // English medical terms
+  'stroke', 'diabetes', 'hypertension', 'cancer', 'tumor', 'infection',
+  'pneumonia', 'fracture', 'surgery', 'therapy', 'treatment', 'diagnosis',
+  'syndrome', 'disease', 'disorder', 'condition', 'symptom', 'fever',
+  'pain', 'inflammation', 'acute', 'chronic', 'recurrent', 'ischemic',
+  'hemorrhagic', 'coronary', 'cardiac', 'hepatic', 'renal', 'pulmonary',
+  // Thai medical terms
+  'โรค', 'อาการ', 'การรักษา', 'ยา', 'วินิจฉัย', 'ผ่าตัด', 'เลือด', 'ความดัน',
+  'เบาหวาน', 'มะเร็ง', 'หัวใจ', 'ตับ', 'ไต', 'ปอด', 'สมอง', 'กระดูก',
+]);
 
 // Import regex patterns and anonymization logic
 const ENTITY_PATTERNS = {
   PERSON: [
-    // Thai names
-    /(?:นาย|นาง|นางสาว|ด\.?ร\.?|ผศ\.?|รศ\.?|ศ\.?|พล\.?[อตตร]\.?|พ\.?[อตตร]\.?|ร\.?[อตตร]\.?|จ\.?[อส]\.?)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)*/gi,
+    // Thai names with titles
+    /(?:นาย|นาง|นางสาว|ด\.?ร\.?|ผศ\.?|รศ\.?|ศ\.?|พล\.?[อตตร]\.?|พ\.?[อตตร]\.?|ร\.?[อตตร]\.?|จ\.?[อส]\.?)\s*[ก-๙]+(?:\s+[ก-๙]+)*/gi,
     // English names with titles
     /(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Dr\.?|Prof\.?)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g,
   ],
@@ -40,15 +54,70 @@ interface Entity {
   confidence?: number;
 }
 
+// Check if text contains medical terms (not person names)
+function isMedicalTerm(text: string): boolean {
+  const lower = text.toLowerCase();
+  for (const term of MEDICAL_TERMS) {
+    if (lower.includes(term)) return true;
+  }
+  return false;
+}
+
+// Check if Thai text contains a known Thai name
+function containsThaiName(text: string): boolean {
+  // Split by spaces and check each word
+  const words = text.split(/\s+/);
+  for (const word of words) {
+    if (THAI_NAMES.has(word)) return true;
+  }
+  return false;
+}
+
+// Detect Thai names from corpus in text
+function detectThaiNamesFromCorpus(text: string): Entity[] {
+  const entities: Entity[] = [];
+  
+  // Look for sequences of Thai characters
+  const thaiWordRegex = /[ก-๙]+/g;
+  let match;
+  
+  while ((match = thaiWordRegex.exec(text)) !== null) {
+    const word = match[0];
+    if (THAI_NAMES.has(word) && !isMedicalTerm(word)) {
+      entities.push({
+        type: 'PERSON',
+        text: word,
+        start: match.index,
+        end: match.index + word.length,
+        confidence: 0.9,
+      });
+    }
+  }
+  
+  return entities;
+}
+
 function detectEntities(text: string, enabledTypes: string[]): Entity[] {
   const entities: Entity[] = [];
   
+  // First, detect Thai names from corpus
+  if (enabledTypes.includes('PERSON')) {
+    const thaiNameEntities = detectThaiNamesFromCorpus(text);
+    entities.push(...thaiNameEntities);
+  }
+  
+  // Then use regex patterns
   for (const type of enabledTypes) {
     const patterns = ENTITY_PATTERNS[type as keyof typeof ENTITY_PATTERNS] || [];
     for (const pattern of patterns) {
       const regex = new RegExp(pattern.source, pattern.flags);
       let match;
       while ((match = regex.exec(text)) !== null) {
+        // Skip if it's a medical term for PERSON type
+        if (type === 'PERSON' && isMedicalTerm(match[0])) {
+          continue;
+        }
+        
         entities.push({
           type,
           text: match[0],
@@ -60,8 +129,12 @@ function detectEntities(text: string, enabledTypes: string[]): Entity[] {
     }
   }
   
-  // Remove overlapping entities
-  entities.sort((a, b) => a.start - b.start);
+  // Remove overlapping entities (keep higher confidence)
+  entities.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return (b.confidence || 0) - (a.confidence || 0);
+  });
+  
   const filtered: Entity[] = [];
   for (const entity of entities) {
     const last = filtered[filtered.length - 1];
