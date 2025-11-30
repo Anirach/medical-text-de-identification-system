@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../backend/src/app.module';
 import cookieParser from 'cookie-parser';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
+import express, { Request, Response } from 'express';
 
 let cachedApp: any;
 
@@ -19,6 +19,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, adapter);
   app.use(cookieParser());
   
+  // Handle favicon.ico requests
+  app.use('/favicon.ico', (req: Request, res: Response) => {
+    res.status(204).end();
+  });
+  
   app.enableCors({
     origin: process.env.FRONTEND_URL || '*',
     credentials: true,
@@ -31,6 +36,6 @@ async function bootstrap() {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const app = await bootstrap();
-  return app(req, res);
+  app(req, res);
 }
 

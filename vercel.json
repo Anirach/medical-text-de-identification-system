@@ -2,38 +2,48 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/favicon.ico",
-      "destination": "/api/favicon"
+      "src": "api/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "backend/**",
+          "prisma/**",
+          "!backend/node_modules/**",
+          "!node_modules/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/favicon.ico",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "src": "/auth/(.*)",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/auth/(.*)",
-      "destination": "/api"
+      "src": "/process(.*)",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/process(.*)",
-      "destination": "/api"
+      "src": "/process-with-llm",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/mask-keywords/(.*)",
-      "destination": "/api"
+      "src": "/validate-entities",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/validate-entities",
-      "destination": "/api"
+      "src": "/mask-keywords/(.*)",
+      "dest": "/api/index.ts"
     },
     {
-      "source": "/process-with-llm",
-      "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
