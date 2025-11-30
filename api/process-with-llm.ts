@@ -154,9 +154,12 @@ const ENTITY_PATTERNS = {
     /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   ],
   ORGANIZATION: [
-    /(?:โรงพยาบาล|รพ\.?)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)*/gi,
-    /(?:คลินิก|ศูนย์|สถาบัน|มหาวิทยาลัย)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)*/gi,
-    /\b(?:BDMS|BNH|BCH|BUMRUNGRAD|BANGKOK\s+HOSPITAL)\b/gi,
+    // Thai hospitals - stop before next org prefix
+    /(?:โรงพยาบาล|รพ\.?)\s*[ก-๙]+(?:\s+[ก-๙]+)?/gi,
+    // Other Thai organizations - limit to 1-2 words
+    /(?:คลินิก|ศูนย์การแพทย์|ศูนย์|สถาบัน|มหาวิทยาลัย)\s*[ก-๙]+(?:\s+[ก-๙]+)?/gi,
+    // Known hospital groups/companies
+    /\b(?:BDMS|BNH|BCH|BUMRUNGRAD|BANGKOK\s+HOSPITAL|SAMITIVEJ|VIBHAVADI|PHYATHAI)\b/gi,
   ],
 };
 
