@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/favicon.ico",
+      "destination": "/api/favicon"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/auth/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/process(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/mask-keywords/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/validate-entities",
+      "destination": "/api"
+    },
+    {
+      "source": "/process-with-llm",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ]
+}

@@ -25,7 +25,8 @@ exports.AppModule = AppModule = __decorate([
             }),
             serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', '..', 'frontend', 'dist'),
-                serveRoot: '/frontend',
+                serveRoot: '/',
+                exclude: ['/api*', '/auth*', '/process*', '/mask-keywords*', '/validate-entities*'],
             }),
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,

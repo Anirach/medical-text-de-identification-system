@@ -13,7 +13,8 @@ import { DeidModule } from './deid/deid.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
-      serveRoot: '/frontend',
+      serveRoot: '/',
+      exclude: ['/api*', '/auth*', '/process*', '/mask-keywords*', '/validate-entities*'],
     }),
     PrismaModule,
     AuthModule,
