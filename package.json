@@ -13,8 +13,7 @@
     "prisma:generate": "cd backend && npm run prisma:generate",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "postinstall": "cd backend && npm run prisma:generate || true",
-    "vercel-build": "cd backend && npm run prisma:generate && cd ../frontend && npm run build"
+    "postinstall": "npm run prisma:generate -w backend || true"
   },
   "devDependencies": {
     "@vercel/node": "^5.5.13",
