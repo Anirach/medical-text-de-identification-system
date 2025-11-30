@@ -12,7 +12,9 @@
     "start": "cd backend && npm run start:prod",
     "prisma:generate": "cd backend && npm run prisma:generate",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "vercel-install": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install",
+    "vercel-build": "cd frontend && npm run build"
   },
   "devDependencies": {
     "@vercel/node": "^5.5.13",

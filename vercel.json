@@ -1,46 +1,18 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+  "installCommand": "npm run vercel-install",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "backend/**"
     }
-  ],
-  "routes": [
-    {
-      "src": "/favicon.ico",
-      "status": 204
-    },
-    {
-      "src": "/auth/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/process(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/process-with-llm",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/validate-entities",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/mask-keywords(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
+  },
+  "rewrites": [
+    { "source": "/auth/:path*", "destination": "/api" },
+    { "source": "/process", "destination": "/api" },
+    { "source": "/process-with-llm", "destination": "/api" },
+    { "source": "/validate-entities", "destination": "/api" },
+    { "source": "/mask-keywords/:path*", "destination": "/api" }
   ]
 }
